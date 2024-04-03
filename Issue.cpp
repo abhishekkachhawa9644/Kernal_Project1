@@ -1,86 +1,194 @@
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <windows.h>
+#include <sstream>
 #include <vector>
+#include <string>
+#include <ctime>
 using namespace std;
 
-// Define structures for member and book
-struct Member {
-    int id;
-    std::string name;
-};
 
-struct Book {
-    int isbn;
-    std::string title;
-    bool available;
-};
 
-// Define functions to interact with the library system
+void Issue_book()
+{
+    system("cls");
+    string bookTitle, userName;
+    string tt, at, gn, ib;
+    cout << "\n\n\tEnter the book title you want to issue: ";
+    cin.ignore();
+    getline(cin, bookTitle);
+    cout << "\n\n\tEnter user name: ";
+    getline(cin, userName);
 
-// Function to display member details
-void checkMemberDetails(const Member& member) {
-    cout << "Member ID: " << member.id <<endl;
-    cout << "Member Name: " << member.name <<endl;
-}
-
-// Function to check book availability
-void checkBookAvailability(const Book& book) {
-    if (book.available) {
-        cout << "Book with ISBN " << book.isbn << " is available" <<endl;
-    } else {
-        cout << "Book with ISBN " << book.isbn << " is not available" << endl;
+    ifstream booksFile("library_all_books.txt");
+    if (!booksFile.is_open())
+    {
+        cout << "\tError opening file for reading!" << endl;
+        return;
     }
-}
 
-// Function to print invoice details
-void printInvoice(const Member& member, const Book& book) {
-    cout << "Invoice details for member " << member.name << ":" << endl;
-    cout << "Book Title: " << book.title << endl;
-    cout << "Book ISBN: " << book.isbn << endl;
-    cout << "Total Amount: $10" << endl; // Assuming a fixed price for borrowing books
-}
+    bool bookFound = false;
+    string line;
+    while (getline(booksFile, line))
+    {
+        stringstream ss(line);
+        string title, author, genre, isbn;
+        char delimiter;
+        ss >> title >> delimiter >> author >> delimiter >> genre >> delimiter >> isbn;
 
-// Function to remove a book from the library system
-void removeBook(std::vector<Book>& books, int isbn) {
-    for (auto it = books.begin(); it != books.end(); ++it) {
-        if (it->isbn == isbn) {
-            books.erase(it);
-            cout << "Book with ISBN " << isbn << " removed from the library system" << endl;
-            return;
+        if (title == bookTitle)
+
+        {
+            tt = title;
+            at = author;
+            gn = genre;
+            ib = isbn;
+
+            bookFound = true;
+            break;
         }
     }
-    cout << "Book with ISBN " << isbn << " not found in the library system" << endl;
-}
+    booksFile.close();
 
-// Function to create a new file system
-void createNewFileSystem() {
-    std::ofstream file("library_system.txt");
-    if (file.is_open()) {
-        file << "Sample library system data" << endl;
-        file.close();
-        cout << "New file system created successfully" << endl;
-    } else {
-        std::cout << "Error creating new file system" << endl;
+    if (!bookFound)
+    {
+        cout << "\tBook not found in the library!" << endl;
+        Sleep(3000);
+        return;
     }
+
+    ifstream usersFile("Login.txt");
+    if (!usersFile.is_open())
+    {
+        cout << "\tError opening users file for reading!" << endl;
+        return;
+    }
+
+    bool userFound = false;
+    while (getline(usersFile, line))
+    {
+        stringstream ss(line);
+        string id, password;
+        char delimiter;
+        ss >> id >> delimiter >> password;
+
+        if (id == userName)
+        {
+            userFound = true;
+            break;
+        }
+    }
+    usersFile.close();
+
+    if (!userFound)
+    {
+        cout << "\tUser not found in the system!" << endl;
+        Sleep(3000);
+        return;
+    }
+    int days, charge = 10;
+    cout << "\n\n How many days you want to borrow : ";
+    cin >> days;
+    charge *= days;
+
+    cout << "\n\n";
+
+    // If both book and user are found, add the book to the issued_books.txt file
+    ofstream issuedBooksFile("issued_books.txt", ios::app);
+    if (!issuedBooksFile.is_open())
+    {
+        cout << "\tError opening issued books file for writing!" << endl;
+        return;
+    }
+    time_t currentTime = time(nullptr);
+    tm *localTime = localtime(&currentTime);
+
+    // Convert the current time to a tm structure for local time
+    std::tm *returnTime = std::localtime(&currentTime);
+
+    // Add 4 days to the current date
+    returnTime->tm_mday += days;
+
+    // Normalize the date (adjusting month and year if necessary)
+    mktime(returnTime);
+
+    // Print the updated date
+    cout << "Updated date: " << (returnTime->tm_year + 1900) << "-"
+         << (returnTime->tm_mon + 1) << "-"
+         << returnTime->tm_mday << endl;
+
+    issuedBooksFile << bookTitle << " : " << at << " : " << gn << " : " << ib << " : " << userName << " : " << (localTime->tm_year + 1900) << "-" << (localTime->tm_mon + 1) << "-" << localTime->tm_mday << " : " << (localTime->tm_hour) << ":" << (localTime->tm_min) << ":" << localTime->tm_sec << " : " << (returnTime->tm_year + 1900) << "-" << (returnTime->tm_mon + 1) << "-" << returnTime->tm_mday << endl;
+    issuedBooksFile.close();
+
+    cout << "\tBook issued successfully!" << endl;
+    Sleep(3000);
+
+    system("cls");
+
+    ifstream inFile;
+    inFile.open("library_all_books.txt");
+    if (!inFile.is_open())
+    {
+        cout << "Error opening file for reading!" << endl;
+    }
+
+    ofstream tempFile;
+    tempFile.open("temp.txt");
+    if (!tempFile.is_open())
+    {
+        cout << "Error opening temporary file!" << endl;
+        inFile.close();
+    }
+
+    bool found = false;
+
+    while (getline(inFile, line))
+    {
+        stringstream ss;
+        ss << line;
+        string tt, at, gn, ib;
+        char delimiter;
+        ss >> tt >> delimiter >> at >> delimiter >> gn >> delimiter >> ib;
+
+        if (tt != bookTitle)
+        {
+            tempFile << "\t" << tt << " : " << at << " : " << gn << " : " << ib << endl
+                     << endl;
+        }
+        else
+        {
+            found = true;
+        }
+        getline(inFile, line);
+    }
+
+    inFile.close();
+    tempFile.close();
+
+    remove("library_all_books.txt");
+    rename("temp.txt", "library_all_books.txt");
+
+    system("cls");
+    cout << "\n\n\t*****INVOICE*****\n\n";
+
+    cout << "\n\t User member     :  " << userName << endl;
+    cout << "\n\t Book Title      :  " << bookTitle << endl;
+    cout << "\n\t Book Author     :  " << at << endl;
+    cout << "\n\t Book Genre      :  " << gn << endl;
+    cout << "\n\t Book ISBN       :  " << ib << endl;
+
+    cout << "\n\tIssued on Date   :  " << (localTime->tm_year + 1900) << "-" << (localTime->tm_mon + 1) << "-" << localTime->tm_mday << endl;
+    cout << "\n\t          Time   :  " << (localTime->tm_hour) << ":" << (localTime->tm_min) << ":" << localTime->tm_sec << endl;
+
+    cout << "\n\tIssued for       :  " << days << " days" << endl;
+    cout << "\n\tReturn Date      :  " << (returnTime->tm_year + 1900) << "-" << (returnTime->tm_mon + 1) << "-" << returnTime->tm_mday << endl;
+    cout << "\n\tBook charge per day : $10" << endl;
+    cout << "\n\tTotal amount        : $" << charge << endl;
+    Sleep(10000);
 }
 
-int main() {
-    // Sample member and book
-    Member member = {1, "John Doe"};
-    Book book = {123456, "Sample Book", true};
+int main(){
 
-    // Display member details, check book availability, and print invoice
-    checkMemberDetails(member);
-    checkBookAvailability(book);
-    printInvoice(member, book);
-
-    // Sample vector of books and removing a book
-    std::vector<Book> books = {{123456, "Sample Book 1", true}, {789012, "Sample Book 2", false}};
-    removeBook(books, 789012);
-
-    // Creating a new file system
-    createNewFileSystem();
-
+    Issue_book();
     return 0;
 }
